@@ -36,7 +36,7 @@ export const signUp = asyncHandler(async (req, res) => {
     user.password = undefined
 
     res.cookie("token", token, cookiesOptions)
-    
+
     res.status(200).json(
         {
             success: true,
@@ -44,4 +44,60 @@ export const signUp = asyncHandler(async (req, res) => {
             user
         }
     )
+})
+
+/************************************************************
+ * @LOGIN
+ * @Method GET
+ * @route http://localhost:4000/api/auth/login
+ * @description User login controller for login 
+ * @parameters email, password
+ * @return User Object
+*************************************************************/
+export const login = asyncHandler(async (req, res) => {
+    const { email, password } = req.body
+
+    if(!email || !password) {
+        throw new CustomError("All field are required", 400)
+    }
+
+    const user = await User.findOne({ email }).select("+password")
+
+    if(!user) {
+        throw new CustomError("Invalid Credential", 400)
+    }
+
+    const isPasswordMatched = await user.comparePassword(password)
+
+    if(isPasswordMatched) {
+        const token = user.getJwtToken()
+        user.password = undefined
+        res.cookie("token", token, cookiesOptions)
+        return res.status(200).json({
+            success: true,
+            token,
+            user
+        })
+    }
+
+    throw new CustomError("Your Password is incorrect", 400)
+})
+
+/************************************************************
+ * @LOGOUT
+ * @Method GET
+ * @route http://localhost:4000/api/auth/logout
+ * @description User logout by clearing cookies
+ * @parameters -
+ * @return Success message
+*************************************************************/
+export const logout = asyncHandler(async (_req, res) => {
+    res.cookie("token", null, {
+        expires: new Date(Date.now()),
+        httpOnly: true
+    })
+    res.status(200).json({
+        success: true,
+        message: "Logged Out"
+    })
 })
