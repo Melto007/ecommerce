@@ -1,11 +1,11 @@
 import mongoose from 'mongoose'
-import app from './app'
-import config from './config/index'
+import app from './app.js'
+import config from "./config/index.js"
 
 (async () => {
     try {
         await mongoose.connect(config.MONGODB_URL)
-        console.log("DB CONNECTED")
+        console.log("DB IS CONNECTED")
 
         app.on('error', (error) => {
             console.log("ERROR", error)
@@ -17,7 +17,7 @@ import config from './config/index'
         }
 
         app.listen(config.PORT, onListening)
-
+         
     } catch (error) {
         console.log("ERROR", error)
         throw error
