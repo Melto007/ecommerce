@@ -3,6 +3,7 @@ import asyncHandler from '../services/asyncHandler'
 import CustomError from '../utils/customError'
 
 import cookiesOptions from '../utils/cookiesOption'
+import mailHelper from '../utlils/mailHelper'
 
 /************************************************************
  * @SIGNUP 
@@ -101,3 +102,58 @@ export const logout = asyncHandler(async (_req, res) => {
         message: "Logged Out"
     })
 })
+
+/************************************************************
+ * @FORGOT_PASSWORD
+ * @Method POST
+ * @route http://localhost:4000/api/auth/password/forgot
+ * @description User forgot password
+ * @parameters email 
+ * @return success message - email send
+*************************************************************/
+export const forgotPassword = asyncHandler(async (req, res) => {
+    const { email } = req.body
+
+    if(!email) {
+        throw new CustomError("Email required", 400)
+    }
+
+    const user = await User.findOne({ email })
+    if(!user) {
+        throw new CustomError("User not exits", 400)
+    }
+
+    const resetToken = user.generateForgotPasswordToken()
+    await user.save({ validateBeforeSave: false })
+
+    const resetUrl = 
+    `${req.protocol}://${req.get("host")}/api/auth/password/reset/${resetToken}`
+
+    const text = `Your password reset link is \n\n ${resetToken}`
+
+    try {
+        await mailHelper({
+            email: user.email,
+            subject: 'Password reset email for website',
+            text: text
+        })
+        res.status(200).json({
+            success: true,
+            message: 'Password reset link send to your email address'
+        })
+    } catch (error) {
+        user.forgotPasswordToken = undefined
+        user.forgotPasswordExpiry = undefined
+        user.save()
+        throw new CustomError(error.message || "Something went wrong please try again later", 400)
+    }
+})
+
+/************************************************************
+ * @RESET_PASSWORD
+ * @Method POST
+ * @route http://localhost:4000/api/auth/password/forgot
+ * @description User reset password
+ * @parameters email 
+ * @return success message - email send
+*************************************************************/

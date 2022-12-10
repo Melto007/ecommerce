@@ -61,8 +61,8 @@ userSchema.method = {
     },
 
     generateForgotPasswordToken: function() {
-        const forgotpassword = randomBytes(20).toString('hex')
-        this.forgotPasswordToken = crypto.createHash("sha256").update(forgotpassword).digest("hex")
+        const forgotToken = randomBytes(20).toString('hex')
+        this.forgotPasswordToken = crypto.createHash("sha256").update(forgotToken).digest("hex")
         this.forgotPasswordExpiry = new Date(Date.now() + 20 * 60 * 1000)
         return forgotpassword
     }
