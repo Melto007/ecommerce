@@ -5,6 +5,8 @@ import CustomError from '../utils/customError'
 import cookiesOptions from '../utils/cookiesOption'
 import mailHelper from '../utlils/mailHelper'
 import crypto from 'crypto'
+import JWT from 'jsonwebtoken'
+import config from '../config/index.js'
 
 /************************************************************
  * @SIGNUP 
@@ -181,7 +183,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
     user.forgotPasswordToken = undefined
     user.forgotPasswordExpiry = undefined
 
-    await user.save()
+    await user.save({ validateBeforeSave: false })
 
     const token = user.getJwtToken()
     user.password = undefined
@@ -193,3 +195,43 @@ export const resetPassword = asyncHandler(async (req, res) => {
         message: "Password Change successfully" 
     })
 })
+
+/************************************************************
+ * @CHANGE_PASSWORD
+ * @Method POST
+ * @route http://localhost:4000/api/auth/password/changepassword
+ * @description User change password
+ * @parameters token from headers, password, confirm password 
+ * @return success message
+*************************************************************/
+export const changePassword = asyncHandler(async (req, res)) => {
+    const { headToken } = req.headers
+    const { password, confirmPassword } = req.body
+    const { token } = req.cookies
+
+    if(password !== confirmPassword) {
+        throw new CustomError("Password and Confim Password are not matching")
+    }
+
+    const data = JWT.verify(headToken, config.JWT_SECRET)
+    const userID = data._id
+
+    const user = await User.findOne({ _id })
+    
+    if(!user) {
+        throw new CustomError("User not exists", 400)
+    }
+
+    user.password = password
+    await user.save({ validateBeforeSave: false })
+
+    const newToken = user.getJwtToken()
+    user.password = undefined
+    res.cookie("token", newToken, cookiesOptions)
+
+    res.status(200).json({
+        success: true,
+        user,
+        message: "Password changes successfully"
+    })
+}
