@@ -205,7 +205,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
  * @return success message
 *************************************************************/
 export const changePassword = asyncHandler(async (req, res)) => {
-    const { headToken } = req.headers
+    const headToken = req.headers.authorization && req.headers.authorization.startsWith('Bearer')
     const { password, confirmPassword } = req.body
     const { token } = req.cookies
 
@@ -214,9 +214,8 @@ export const changePassword = asyncHandler(async (req, res)) => {
     }
 
     const data = JWT.verify(headToken, config.JWT_SECRET)
-    const userID = data._id
 
-    const user = await User.findOne({ _id })
+    const user = await User.findById(data._id, "password")
     
     if(!user) {
         throw new CustomError("User not exists", 400)
@@ -235,3 +234,12 @@ export const changePassword = asyncHandler(async (req, res)) => {
         message: "Password changes successfully"
     })
 }
+
+/************************************************************
+ * @
+ * @Method POST
+ * @route http://localhost:4000/api/auth/password/changepassword
+ * @description User change password
+ * @parameters token from headers, password, confirm password 
+ * @return success message
+*************************************************************/
