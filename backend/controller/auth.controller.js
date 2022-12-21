@@ -132,7 +132,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     const resetUrl = 
     `${req.protocol}://${req.get("host")}/api/auth/password/reset/${resetToken}`
 
-    const text = `Your password reset link is \n\n ${resetToken}`
+    const text = `Your password reset link is \n\n ${resetUrl}`
 
     try {
         await mailHelper({
@@ -204,13 +204,12 @@ export const resetPassword = asyncHandler(async (req, res) => {
  * @parameters token from headers, password, confirm password 
  * @return success message
 *************************************************************/
-export const changePassword = asyncHandler(async (req, res)) => {
+export const changePassword = asyncHandler(async (req, res) => {
     const headToken = req.headers.authorization && req.headers.authorization.startsWith('Bearer')
     const { password, confirmPassword } = req.body
-    const { token } = req.cookies
 
     if(password !== confirmPassword) {
-        throw new CustomError("Password and Confim Password are not matching")
+        throw new CustomError("Password and Confirm Password are not matching", 400)
     }
 
     const data = JWT.verify(headToken, config.JWT_SECRET)
@@ -230,10 +229,10 @@ export const changePassword = asyncHandler(async (req, res)) => {
 
     res.status(200).json({
         success: true,
-        user,
+        newToken,
         message: "Password changes successfully"
     })
-}
+}) 
 
 /************************************************************
  * @PROFILE
@@ -254,3 +253,4 @@ export const getProfile = asyncHandler(async (req, res) => {
         user
     })
 })
+
