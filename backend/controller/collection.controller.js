@@ -58,10 +58,36 @@ export const updateCollection = asyncHandler(async () => {
     if(!updatedCollection) {
         throw new CustomError('Collection not found', 400)
     }
-    
+
     res.status(200).json({
         success: true,
-        message: "Successfully updated",
+        message: "collection updated successfully",
         updatedCollection
+    })
+})
+
+/*************************************************************
+ * @delete_collection
+ * @Method DELETE
+ * @Route http://localhost:5000/api/deletecollection
+ * @description delete collections
+ * @parameters -
+ * @return success message, collections object
+ ************************************************************/
+export const deleteCollection = asyncHandler(async (req, res) => {
+    const { id: collectionID } = req.params
+    
+    const collection = await Collection.findByIdAndDelete(collectionID)
+
+    if(!collection) {
+        throw new CustomError('Collection not found', 400)
+    }
+
+    collection.remove()
+    // delete collection 
+
+    res.status(200).json({
+        success: true,
+        message: 'collection deleted successfully'
     })
 })
