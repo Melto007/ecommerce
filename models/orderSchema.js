@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import OrderStatus from '../utils/OrderStatus'
 
 const orderSchema = new mongoose.Schema(
     {
@@ -20,6 +21,26 @@ const orderSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: true
+        },
+        phoneNumber: {
+            type: Number,
+            required: true
+        },
+        address: {
+            type: String,
+            required: true
+        },
+        amount: {
+            type: Number,
+            required: true,
+            default: 0
+        },
+        coupon: String,
+        transactionId: String,
+        status: {
+            type: String,
+            enum: Object.values(OrderStatus),
+            default: OrderStatus.ORDERED
         }
     },
     {
