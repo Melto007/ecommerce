@@ -2,6 +2,7 @@ import User from '../controllers/auth.controller.js'
 import CustomError from '../utils/CustomError.js'
 import asyncHandler from '../services/asyncHandler.js'
 import cookiesOptions from '../utils/CookiesOptions.js'
+import mailHelper from '../utils/MailHelper.js'
 
 /**************************************************
 *  @Signup
@@ -94,4 +95,49 @@ export const logout = asyncHandler(async (_req, res) => {
         success: true,
         message: "Logged out"
     })
+})
+
+/**************************************************
+*  @ForgotPassword
+*  @Method POST
+*  @Route http://localhost:4000/api/auth/password/forgot 
+*  @Description User Forgot password
+*  @Params - email
+*  @return change password link to mail
+***************************************************/
+export const forgotpassword = asyncHandler(async (req, res) => {
+    const { email } = req.body
+
+    if(!email) {
+        throw new CustomError("Email field is required", 400)
+    }
+
+    const user = await User.findOne({ email })
+
+    if(!email) {
+        throw new CustomError("User not found", 400)
+    }
+
+    const resetToken = user.generateForgotPasswordToken()
+    await user.save({ validateBeforeSave: false })
+
+    const resetUrl = `${req.protocol}://${req.get("host")}/api/auth/password/reset/${resetToken}`
+
+    try {
+        await mailHelper({
+            to: user.email,
+            subject: "Reset password",
+            text: `url for reset password ${resetUrl}`
+        })
+        res.status(200).json({
+            success: true,
+            message: 'reset password link send to your mail'
+        })
+    } catch (error) {
+        user.forgotPasswordToken = undefined
+        user.forgotPasswordExpiry = undefined
+        await user.save({ validateBeforeSave: false })
+
+        throw new CustomError('Reset password is failed', 400)
+    }
 })
