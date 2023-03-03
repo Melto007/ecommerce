@@ -3,6 +3,7 @@ import CustomError from '../utils/CustomError.js'
 import asyncHandler from '../services/asyncHandler.js'
 import cookiesOptions from '../utils/CookiesOptions.js'
 import mailHelper from '../utils/MailHelper.js'
+import crypto from 'crypto'
 
 /**************************************************
 *  @Signup
@@ -140,4 +141,46 @@ export const forgotpassword = asyncHandler(async (req, res) => {
 
         throw new CustomError('Reset password is failed', 400)
     }
+})
+
+/**************************************************
+*  @RestPassword
+*  @Method POST
+*  @Route http://localhost:4000/api/auth/password/reset/:resetToken 
+*  @Description User resetpassword
+*  @Params - password, confirm password
+*  @return token, success message
+***************************************************/
+export const resetPassword = asyncHandler(async (req, res) => {
+    const { token: resetToken } = req.params
+    const { password, confirmPassword } = req.body
+
+    const resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex')
+
+    const user = await User.findOne({
+        forgotPasswordToken: resetPasswordToken,
+        forgotPasswordExpiry: {$gt: Date.now()}
+    })
+
+    if(!user) {
+        throw new CustomError("Password token is invalid or expired", 400)
+    }
+
+    if(password !== confirmPassword) {
+        throw new CustomError("Password and ConfirmPassword must be same", 400)
+    }
+
+    user.password = password
+    user.forgotPasswordToken = undefined
+    user.forgotPasswordExpiry = undefined
+
+    await user.save()
+
+    const token = user.getJwtToken()
+    user.password = undefined
+    res.cookies("token", token, cookiesOptions)
+    res.status(200).json({
+        success: true,
+        token
+    })
 })
