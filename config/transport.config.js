@@ -12,3 +12,4 @@ const transporter = nodemailer.createTransport({
 });
 
 export default transporter
+

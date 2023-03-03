@@ -1,4 +1,4 @@
-import User from '../controllers/auth.controller.js'
+import User from '../models/user.schema.js'
 import CustomError from '../utils/CustomError.js'
 import asyncHandler from '../services/asyncHandler.js'
 import cookiesOptions from '../utils/CookiesOptions.js'
@@ -27,14 +27,14 @@ export const signup = asyncHandler(async (req, res) => {
     }
 
     const user = await User.create({
-        name: name,
-        email: email,
-        password: password
+        name,
+        email,
+        password
     })
 
     const token = user.getJwtToken()
     user.password = undefined
-    res.cookies("token", token, cookiesOptions)
+    res.cookie("token", token, cookiesOptions)
     res.status(200).json({
         success: true,
         token,
@@ -66,12 +66,12 @@ export const login = asyncHandler(async (req, res) => {
     const isPasswordMatches = await user.comparePassword(password)
 
     if(!isPasswordMatches) {
-        throw new CustomError("Invalid Credentials", 400)
+        throw new CustomError("Invalid Credentials - pass", 400)
     }
 
     const token = user.getJwtToken()
     user.password = undefined
-    res.cookies("token", token, cookiesOptions)
+    res.cookie("token", token, cookiesOptions)
     res.status(200).json({
         success: true,
         token,
@@ -88,7 +88,7 @@ export const login = asyncHandler(async (req, res) => {
 *  @return logout message
 ***************************************************/
 export const logout = asyncHandler(async (_req, res) => {
-    res.cookies("token", null, {
+    res.cookie("token", null, {
         expires: new Date(Date.now()),
         httpOnly: true
     })
@@ -113,22 +113,27 @@ export const forgotpassword = asyncHandler(async (req, res) => {
         throw new CustomError("Email field is required", 400)
     }
 
-    const user = await User.findOne({ email })
+    const user = await User.findOne({email})
 
-    if(!email) {
+    if(!user) {
         throw new CustomError("User not found", 400)
     }
-
+    
     const resetToken = user.generateForgotPasswordToken()
+
     await user.save({ validateBeforeSave: false })
 
     const resetUrl = `${req.protocol}://${req.get("host")}/api/auth/password/reset/${resetToken}`
 
+    const text = `Your password reset url is
+    \n\n ${resetUrl}\n\n
+    `
+
     try {
         await mailHelper({
-            to: user.email,
+            email: user.email,
             subject: "Reset password",
-            text: `url for reset password ${resetUrl}`
+            text: text
         })
         res.status(200).json({
             success: true,
@@ -178,9 +183,53 @@ export const resetPassword = asyncHandler(async (req, res) => {
 
     const token = user.getJwtToken()
     user.password = undefined
-    res.cookies("token", token, cookiesOptions)
+    res.cookie("token", token, cookiesOptions)
     res.status(200).json({
         success: true,
         token
+    })
+})
+
+/**************************************************
+*  @ChangePassword
+*  @Method POST
+*  @Route http://localhost:4000/api/auth/password/changepassword 
+*  @Description User change password after login
+*  @Params - password, confirm password
+*  @return token, success message
+***************************************************/
+export const changePassword = asyncHandler(async (req, res) => {
+    const user = req.user
+    const { password, confirmPassword } = req.body
+
+    if(!user) {
+        throw new CustomError('Unauthorized User', 400)
+    }
+
+    if(!password && !confirmPassword) {
+        throw new CustomError("fill all the fields", 400)
+    }
+
+    if(password !== confirmPassword) {
+        throw new CustomError("password and confirm password must be same", 400)
+    }
+
+    const findUser = await User.findOne({ email: user.email }).select("+password")
+
+    if(!findUser) {
+        throw new CustomError('Unauthorized User', 400)
+    }
+
+    findUser.password = password
+    await findUser.save({ validateBeforeSave: false })
+
+    const token = findUser.getJwtToken()
+    findUser.password = undefined
+    res.cookie("token", token, cookiesOptions)
+
+    res.status(200).json({
+        success: true,
+        token,
+        findUser
     })
 })

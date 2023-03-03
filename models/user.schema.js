@@ -1,13 +1,13 @@
 import mongoose from "mongoose";
-import AuthRoles from "../utils/AuthRoles";
+import AuthRoles from "../utils/AuthRoles.js";
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
-import config from '../config/index'
+import config from '../config/index.js'
 
 const userSchema = new mongoose.Schema(
     {
-        user: {
+        name: {
             type: String,
             required: [true, "Name is required"],
             maxLength: [50, "Name must be less than 50 characters"]
@@ -38,7 +38,7 @@ const userSchema = new mongoose.Schema(
 
 userSchema.pre("save", async function(next){
     if(!this.isModified("password")) return next()
-    this.password = bcrypt.hash(this.password, 10)
+    this.password = await bcrypt.hash(this.password, 10)
     next()
 })
 
@@ -65,6 +65,7 @@ userSchema.methods = {
 
         this.forgotPasswordToken = crypto.createHash('sha256').update(forgotToken).digest('hex')
         this.forgotPasswordExpiry = Date.now() + 20 * 60 * 1000
+        return forgotToken
     }
 }
 

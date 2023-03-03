@@ -5,10 +5,11 @@ import config from '../config/index.js'
 import User from '../models/user.schema.js'
 
 export const isLoggedIn = asyncHandler(async (req, _res, next) => {
+    console.log("success")
     let token
 
-    if(req.cookies.token || req.headers.authorization && req.headers.authorization.startsWith(`Bearer`)) {
-        token = req.cookies.token || req.headers.authorization.split(" ")[1]
+    if(req.cookies.token || req.headers.Authorization && req.headers.Authorization.startsWith(`Bearer`)) {
+        token = req.cookies.token || req.headers.Authorization.split(" ")[1]
     }
 
     if(!token) {
