@@ -190,14 +190,14 @@ export const resetPassword = asyncHandler(async (req, res) => {
     })
 })
 
-/**************************************************
+/******************************************************
 *  @ChangePassword
 *  @Method POST
 *  @Route http://localhost:4000/api/auth/password/changepassword 
 *  @Description User change password after login
 *  @Params - password, confirm password
 *  @return token, success message
-***************************************************/
+*******************************************************/
 export const changePassword = asyncHandler(async (req, res) => {
     const user = req.user
     const { password, confirmPassword } = req.body
